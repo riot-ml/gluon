@@ -6,8 +6,7 @@
 (generate_opam_files true)
 (cram enable)
 
-(source
- (github riot-ml/riot))
+(source (github riot-ml/gluon))
 
 (authors "Leandro Ostera <leandro@abstractmachines.dev>")
 
