@@ -17,7 +17,9 @@ let handle_error r =
   | Error _ -> Printf.sprintf "other error" |> failwith
 
 let run () =
-  let addr = Net.Addr.(tcp loopback 9001) in
+  let port = 9001 in
+  let addr = Net.Addr.tcp Net.Addr.loopback port in
+  log "listening on 0.0.0.0:%d\n%!" port;
 
   let* poll = Poll.make () in
   let* server = Net.Tcp_listener.bind addr in

@@ -6,8 +6,8 @@ maintainer: ["Leandro Ostera <leandro@abstractmachines.dev>"]
 authors: ["Leandro Ostera <leandro@abstractmachines.dev>"]
 license: "MIT"
 tags: ["async" "io" "tcp" "udp" "multicore"]
-homepage: "https://github.com/riot-ml/riot"
-bug-reports: "https://github.com/riot-ml/riot/issues"
+homepage: "https://github.com/riot-ml/gluon"
+bug-reports: "https://github.com/riot-ml/gluon/issues"
 depends: [
   "rio" {= version}
   "bytestring" {= version}
@@ -32,5 +32,5 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/riot-ml/riot.git"
+dev-repo: "git+https://github.com/riot-ml/gluon.git"
 available: arch != "x86_32" & arch != "arm32" & arch != "ppc64" & arch != "s390x" & os != "freebsd"
