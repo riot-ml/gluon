@@ -1,6 +1,8 @@
-# Changes
+# 0.0.9
 
-## 0.0.8
+* Fix implicit casting on epoll/kqueue bindings – thanks @amitsingh19975 :clap:
+
+# 0.0.8
 
 * First implementation of an efficient, low-level async I/O engine inspired by
   Rust's Mio. Gluon uses an opaque Token based approach that lets you directly

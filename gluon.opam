@@ -9,11 +9,11 @@ tags: ["async" "io" "tcp" "udp" "multicore"]
 homepage: "https://github.com/riot-ml/gluon"
 bug-reports: "https://github.com/riot-ml/gluon/issues"
 depends: [
-  "rio" {= version}
-  "bytestring" {= version}
-  "libc" {>= "0.0.1"}
+  "bytestring" {>= "0.0.1"}
   "config" {>= "0.0.1"}
+  "libc" {>= "0.0.1"}
   "ocaml" {>= "5.1"}
+  "rio" {>= "0.0.1"}
   "uri" {>= "4.4.0"}
   "dune" {>= "3.11"}
   "odoc" {with-doc}
