@@ -70,7 +70,7 @@ CAMLprim value gluon_unix_epoll_ctl(value v_epoll, value v_flags, value v_fd, va
     value* ocaml_value = malloc (sizeof (value*));
     *ocaml_value = Field(v_event, 0);
     caml_register_generational_global_root(ocaml_value);
-    event.data.u64 = ocaml_value;
+    event.data.u64 = (intptr_t)ocaml_value;
 
     caml_enter_blocking_section();
     int res = epoll_ctl(Int_val(v_epoll), Int_val(v_flags), Int_val(v_fd), &event);
