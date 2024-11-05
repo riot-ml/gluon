@@ -154,7 +154,7 @@ module Net : sig
     val loopback : tcp_addr
     val of_addr_info : Unix.addr_info -> stream_addr option
     val of_unix : Unix.sockaddr -> stream_addr
-    val of_uri : Uri.t -> (stream_addr, [> `Noop ]) io_result
+    val of_uri : Uri.t -> (stream_addr, [> `Could_not_resolve_uri of Uri.t | `Uri_has_no_host of Uri.t ]) io_result
     val parse : string -> (stream_addr, [> `Noop ]) io_result
     val port : stream_addr -> int
     val pp : Format.formatter -> stream_addr -> unit

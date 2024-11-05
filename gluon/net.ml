@@ -55,11 +55,14 @@ module Addr = struct
       | Some port -> Int.to_string port
       | _ -> Uri.scheme uri |> Option.value ~default:"http"
     in
-    let host = Uri.host_with_default ~default:"0.0.0.0" uri in
-    match get_info host port with
-    | Ok (ip :: _) -> Ok ip
-    | Ok [] -> Error `No_info
-    | Error err -> Error err
+    let host = Uri.host uri in
+    match host with
+    | None -> Error (`Uri_has_no_host uri)
+    | Some host ->
+      (match get_info host port with
+      | Ok (ip :: _) -> Ok ip
+      | Ok [] -> Error (`Could_not_resolve_uri uri)
+      | Error err -> Error err)
 
   let parse str = Uri.of_string str |> of_uri
   let get_info (`Tcp (host, port)) = get_info host (Int.to_string port)
