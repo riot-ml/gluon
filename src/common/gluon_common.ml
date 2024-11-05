@@ -1,10 +1,8 @@
-type io_error =
+type error =
   [ `Could_not_resolve_uri of Uri.t
   | `Uri_has_no_host of Uri.t
   | `Unix_error of Unix.error
   | `Would_block ]
-
-type ('ok, 'err) io_result = ('ok, ([> io_error ] as 'err)) Stdlib.result
 
 let pp_err fmt err =
   match err with

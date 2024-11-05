@@ -1,12 +1,10 @@
-type io_error =
+type error =
   [ `Could_not_resolve_uri of Uri.t
   | `Uri_has_no_host of Uri.t
   | `Unix_error of Unix.error
   | `Would_block ]
 
-type ('ok, 'err) io_result = ('ok, ([> io_error ] as 'err)) Stdlib.result
-
-val pp_err : Format.formatter -> io_error -> unit
+val pp_err : Format.formatter -> error -> unit
 
 module Fd : sig
   type t = Unix.file_descr
@@ -76,29 +74,29 @@ module Sys : sig
     type t
 
     val name : string
-    val make : unit -> (t, [> `Noop ]) io_result
+    val make : unit -> (t, [> error ]) result
 
     val select :
       ?timeout:int64 ->
       ?max_events:int ->
       t ->
-      (Event.t list, [> `Noop ]) io_result
+      (Event.t list, [> error ]) result
 
     val register :
       t ->
       fd:Fd.t ->
       token:Token.t ->
       interest:Interest.t ->
-      (unit, [> `Noop ]) io_result
+      (unit, [> error ]) result
 
     val reregister :
       t ->
       fd:Fd.t ->
       token:Token.t ->
       interest:Interest.t ->
-      (unit, [> `Noop ]) io_result
+      (unit, [> error ]) result
 
-    val deregister : t -> fd:Fd.t -> (unit, [> `Noop ]) io_result
+    val deregister : t -> fd:Fd.t -> (unit, [> error ]) result
   end
 
   module Event : sig
@@ -110,33 +108,25 @@ module Source : sig
   module type Intf = sig
     type t
 
-    val deregister : t -> Sys.Selector.t -> (unit, [> `Noop ]) io_result
+    val deregister : t -> Sys.Selector.t -> (unit, [> error ]) result
 
     val register :
-      t ->
-      Sys.Selector.t ->
-      Token.t ->
-      Interest.t ->
-      (unit, [> `Noop ]) io_result
+      t -> Sys.Selector.t -> Token.t -> Interest.t -> (unit, [> error ]) result
 
     val reregister :
-      t ->
-      Sys.Selector.t ->
-      Token.t ->
-      Interest.t ->
-      (unit, [> `Noop ]) io_result
+      t -> Sys.Selector.t -> Token.t -> Interest.t -> (unit, [> error ]) result
   end
 
   type t = S : ((module Intf with type t = 'state) * 'state) -> t
 
-  val deregister : t -> Sys.Selector.t -> (unit, [> `Noop ]) io_result
+  val deregister : t -> Sys.Selector.t -> (unit, [> error ]) result
   val make : (module Intf with type t = 'a) -> 'a -> t
 
   val register :
-    t -> Sys.Selector.t -> Token.t -> Interest.t -> (unit, [> `Noop ]) io_result
+    t -> Sys.Selector.t -> Token.t -> Interest.t -> (unit, [> error ]) result
 
   val reregister :
-    t -> Sys.Selector.t -> Token.t -> Interest.t -> (unit, [> `Noop ]) io_result
+    t -> Sys.Selector.t -> Token.t -> Interest.t -> (unit, [> error ]) result
 end
 
 module File : sig
@@ -144,10 +134,10 @@ module File : sig
 
   val pp : Format.formatter -> t -> unit
   val close : t -> unit
-  val read : t -> ?pos:int -> ?len:int -> bytes -> (int, [> `Noop ]) io_result
-  val write : t -> ?pos:int -> ?len:int -> bytes -> (int, [> `Noop ]) io_result
-  val read_vectored : t -> Rio.Iovec.t -> (int, [> `Noop ]) io_result
-  val write_vectored : t -> Rio.Iovec.t -> (int, [> `Noop ]) io_result
+  val read : t -> ?pos:int -> ?len:int -> bytes -> (int, [> error ]) result
+  val write : t -> ?pos:int -> ?len:int -> bytes -> (int, [> error ]) result
+  val read_vectored : t -> Rio.Iovec.t -> (int, [> error ]) result
+  val write_vectored : t -> Rio.Iovec.t -> (int, [> error ]) result
   val to_source : t -> Source.t
 end
 
@@ -157,19 +147,13 @@ module Net : sig
     type tcp_addr = [ `v4 | `v6 ] raw_addr
     type stream_addr
 
-    val get_info : stream_addr -> (stream_addr list, [> `Noop ]) io_result
+    val get_info : stream_addr -> (stream_addr list, [> error ]) result
     val ip : stream_addr -> string
     val loopback : tcp_addr
     val of_addr_info : Unix.addr_info -> stream_addr option
     val of_unix : Unix.sockaddr -> stream_addr
-
-    val of_uri :
-      Uri.t ->
-      ( stream_addr,
-        [> `Could_not_resolve_uri of Uri.t | `Uri_has_no_host of Uri.t ] )
-      io_result
-
-    val parse : string -> (stream_addr, [> `Noop ]) io_result
+    val of_uri : Uri.t -> (stream_addr, error) result
+    val parse : string -> (stream_addr, [> error ]) result
     val port : stream_addr -> int
     val pp : Format.formatter -> stream_addr -> unit
     val tcp : tcp_addr -> int -> stream_addr
@@ -192,35 +176,32 @@ module Net : sig
 
     val connect :
       Addr.stream_addr ->
-      ([ `Connected of t | `In_progress of t ], [> `Noop ]) io_result
+      ([ `Connected of t | `In_progress of t ], [> error ]) result
 
     val close : t -> unit
     val pp : Format.formatter -> t -> unit
-    val read : t -> ?pos:int -> ?len:int -> bytes -> (int, [> `Noop ]) io_result
-    val read_vectored : t -> Rio.Iovec.t -> (int, [> `Noop ]) io_result
+    val read : t -> ?pos:int -> ?len:int -> bytes -> (int, [> error ]) result
+    val read_vectored : t -> Rio.Iovec.t -> (int, [> error ]) result
 
     val sendfile :
-      t -> file:Fd.t -> off:int -> len:int -> (int, [> `Noop ]) io_result
+      t -> file:Fd.t -> off:int -> len:int -> (int, [> error ]) result
 
     val to_source : t -> Source.t
-
-    val write :
-      t -> ?pos:int -> ?len:int -> bytes -> (int, [> `Noop ]) io_result
-
-    val write_vectored : t -> Rio.Iovec.t -> (int, [> `Noop ]) io_result
+    val write : t -> ?pos:int -> ?len:int -> bytes -> (int, [> error ]) result
+    val write_vectored : t -> Rio.Iovec.t -> (int, [> error ]) result
   end
 
   module Tcp_listener : sig
     type t = Socket.listen_socket
 
-    val accept : t -> (Tcp_stream.t * Addr.stream_addr, [> `Noop ]) io_result
+    val accept : t -> (Tcp_stream.t * Addr.stream_addr, [> error ]) result
 
     val bind :
       ?reuse_addr:bool ->
       ?reuse_port:bool ->
       ?backlog:int ->
       Addr.stream_addr ->
-      (t, [> `Noop ]) io_result
+      (t, [> error ]) result
 
     val close : t -> unit
     val pp : Format.formatter -> t -> unit
@@ -231,18 +212,15 @@ end
 module Poll : sig
   type t
 
-  val deregister : t -> Source.t -> (unit, [> `Noop ]) io_result
-  val make : unit -> (t, [> `Noop ]) io_result
+  val deregister : t -> Source.t -> (unit, [> error ]) result
+  val make : unit -> (t, [> error ]) result
 
   val poll :
-    ?max_events:int ->
-    ?timeout:int64 ->
-    t ->
-    (Event.t list, [> `Noop ]) io_result
+    ?max_events:int -> ?timeout:int64 -> t -> (Event.t list, [> error ]) result
 
   val register :
-    t -> Token.t -> Interest.t -> Source.t -> (unit, [> `Noop ]) io_result
+    t -> Token.t -> Interest.t -> Source.t -> (unit, [> error ]) result
 
   val reregister :
-    t -> Token.t -> Interest.t -> Source.t -> (unit, [> `Noop ]) io_result
+    t -> Token.t -> Interest.t -> Source.t -> (unit, [> error ]) result
 end

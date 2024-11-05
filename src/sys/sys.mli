@@ -5,29 +5,26 @@ module Selector : sig
   type t
 
   val name : string
-  val make : unit -> (t, [> `Noop ]) io_result
+  val make : unit -> (t, [> error ]) result
 
   val select :
-    ?timeout:int64 ->
-    ?max_events:int ->
-    t ->
-    (Event.t list, [> `Noop ]) io_result
+    ?timeout:int64 -> ?max_events:int -> t -> (Event.t list, [> error ]) result
 
   val register :
     t ->
     fd:Fd.t ->
     token:Token.t ->
     interest:Interest.t ->
-    (unit, [> `Noop ]) io_result
+    (unit, [> error ]) result
 
   val reregister :
     t ->
     fd:Fd.t ->
     token:Token.t ->
     interest:Interest.t ->
-    (unit, [> `Noop ]) io_result
+    (unit, [> error ]) result
 
-  val deregister : t -> fd:Fd.t -> (unit, [> `Noop ]) io_result
+  val deregister : t -> fd:Fd.t -> (unit, [> error ]) result
 end
 
 module Event : sig
