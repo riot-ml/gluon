@@ -6,15 +6,7 @@ let log = Format.printf
 let handle_error r =
   match r with
   | Ok x -> x
-  | Error `Would_block -> Printf.sprintf "Would block\r\n%!" |> failwith
-  | Error `No_info -> Printf.sprintf "No info\r\n%!" |> failwith
-  | Error `Connection_closed ->
-      Printf.sprintf "Connection closed\r\n%!" |> failwith
-  | Error (`Exn exn) ->
-      Printf.sprintf "Exn: %S\r\n%!" (Printexc.to_string exn) |> failwith
-  | Error (`Unix_error err) ->
-      Printf.sprintf "Unix error: %S\r\n%!" (Unix.error_message err) |> failwith
-  | Error _ -> Printf.sprintf "other error" |> failwith
+  | Error err -> Format.asprintf "%a" pp_err err |> failwith
 
 let run () =
   let port = 9001 in
@@ -62,7 +54,7 @@ let run () =
         (* log "subbed buffer\n%!"; *)
         (* log "made %d bytestring \n%!" (Bytestring.length data); *)
         let* () =
-          if Bytestring.length data = 0 then Error `Connection_closed else Ok ()
+          if Bytestring.length data = 0 then Error Connection_closed else Ok ()
         in
         let* _written =
           Net.Tcp_stream.write_vectored conn (Bytestring.to_iovec data)
@@ -75,7 +67,7 @@ let run () =
       in
       let src = Net.Tcp_stream.to_source conn in
       match echo_loop src with
-      | Ok _ | Error `Would_block -> `continue
+      | Ok _ | Error (Syscall_would_block _) -> `continue
       | Error _ -> `finished
     else (* log "event is not writable/readable? \n%!"; *)
       `continue

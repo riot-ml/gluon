@@ -45,7 +45,7 @@ module Addr = struct
     | _ -> None
 
   let get_info host service =
-    syscall @@ fun () ->
+    syscall ~name:"Addr.get_info" @@ fun () ->
     let info = Unix.getaddrinfo host service [] in
     Ok (List.filter_map of_addr_info info)
 
@@ -57,11 +57,11 @@ module Addr = struct
     in
     let host = Uri.host uri in
     match host with
-    | None -> Error (`Uri_has_no_host uri)
+    | None -> Error (Uri_has_no_host uri)
     | Some host -> (
         match get_info host port with
         | Ok (ip :: _) -> Ok ip
-        | Ok [] -> Error (`Could_not_resolve_uri uri)
+        | Ok [] -> Error (Could_not_resolve_uri uri)
         | Error err -> Error err)
 
   let parse str = Uri.of_string str |> of_uri
@@ -91,7 +91,7 @@ module Tcp_listener = struct
   let close = Socket.close
 
   let bind ?(reuse_addr = true) ?(reuse_port = true) ?(backlog = 128) addr =
-    syscall @@ fun () ->
+    syscall ~name:"TcpListener.bind" @@ fun () ->
     let sock_domain = Addr.to_domain addr in
     let sock_type, sock_addr = Addr.to_unix addr in
     let fd = Socket.make sock_domain sock_type in
@@ -102,7 +102,7 @@ module Tcp_listener = struct
     Ok fd
 
   let accept fd =
-    syscall @@ fun () ->
+    syscall ~name:"TcpListener.accept" @@ fun () ->
     let raw_fd, client_addr = Unix.accept ~cloexec:true fd in
     Unix.set_nonblock raw_fd;
     let addr = Addr.of_unix client_addr in
@@ -136,7 +136,7 @@ module Tcp_stream = struct
     let sock_domain = Addr.to_domain addr in
     let sock_type, sock_addr = Addr.to_unix addr in
     let fd = Socket.make sock_domain sock_type in
-    syscall @@ fun () ->
+    syscall ~name:"TcpStream.connect" @@ fun () ->
     try
       Unix.connect fd sock_addr;
       Ok (`Connected fd)
@@ -144,27 +144,33 @@ module Tcp_stream = struct
 
   let read fd ?(pos = 0) ?len buf =
     let len = Option.value len ~default:(Bytes.length buf - 1) in
-    syscall @@ fun () -> Ok (UnixLabels.read fd ~buf ~pos ~len)
+    syscall ~name:"TcpStream.read" @@ fun () ->
+    Ok (UnixLabels.read fd ~buf ~pos ~len)
 
   let write fd ?(pos = 0) ?len buf =
     let len = Option.value len ~default:(Bytes.length buf - 1) in
-    syscall @@ fun () -> Ok (UnixLabels.write fd ~buf ~pos ~len)
+    syscall ~name:"TcpStream.write" @@ fun () ->
+    Ok (UnixLabels.write fd ~buf ~pos ~len)
 
   external gluon_readv : Unix.file_descr -> Iovec.t -> int = "gluon_unix_readv"
 
-  let read_vectored fd iov = syscall @@ fun () -> Ok (gluon_readv fd iov)
+  let read_vectored fd iov =
+    syscall ~name:"TcpStream.read_vectored" @@ fun () -> Ok (gluon_readv fd iov)
 
   external gluon_writev : Unix.file_descr -> Iovec.t -> int
     = "gluon_unix_writev"
 
-  let write_vectored fd iov = syscall @@ fun () -> Ok (gluon_writev fd iov)
+  let write_vectored fd iov =
+    syscall ~name:"TcpStream.write_vectored" @@ fun () ->
+    Ok (gluon_writev fd iov)
 
   external gluon_sendfile :
     Unix.file_descr -> Unix.file_descr -> int -> int -> int
     = "gluon_unix_sendfile"
 
   let sendfile fd ~file ~off ~len =
-    syscall @@ fun () -> Ok (gluon_sendfile file fd off len)
+    syscall ~name:"TcpStream.sendfile" @@ fun () ->
+    Ok (gluon_sendfile file fd off len)
 
   let to_source t =
     let module Src = struct

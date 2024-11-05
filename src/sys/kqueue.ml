@@ -19,22 +19,24 @@ module FFI = struct
     = "gluon_unix_kevent"
 
   let kevent ~max_events ~timeout kq =
-    syscall @@ fun () -> Ok (gluon_unix_kevent ~max_events ~timeout kq)
+    syscall ~name:"kevent" @@ fun () ->
+    Ok (gluon_unix_kevent ~max_events ~timeout kq)
 
   external gluon_unix_kqueue : unit -> kqueue = "gluon_unix_kqueue"
 
-  let kqueue () = syscall @@ fun () -> Ok (gluon_unix_kqueue ())
+  let kqueue () = syscall ~name:"kqueue" @@ fun () -> Ok (gluon_unix_kqueue ())
 
   external gluon_unix_fcntl : Fd.t -> cmd:int -> arg:int -> int
     = "gluon_unix_fcntl"
 
-  let fcntl fd cmd arg = syscall @@ fun () -> Ok (gluon_unix_fcntl fd ~cmd ~arg)
+  let fcntl fd cmd arg =
+    syscall ~name:"fcntl" @@ fun () -> Ok (gluon_unix_fcntl fd ~cmd ~arg)
 
   external gluon_unix_kevent_register :
     kqueue -> event array -> int array -> unit = "gluon_unix_kevent_register"
 
   let kevent_register fd changes ignored_errors =
-    syscall @@ fun () ->
+    syscall ~name:"kevent_register" @@ fun () ->
     Ok (gluon_unix_kevent_register fd changes ignored_errors)
 end
 

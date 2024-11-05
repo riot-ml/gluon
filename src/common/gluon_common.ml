@@ -1,15 +1,30 @@
 type error =
-  [ `Could_not_resolve_uri of Uri.t
-  | `Uri_has_no_host of Uri.t
-  | `Unix_error of Unix.error
-  | `Would_block ]
+  | Connection_closed
+  | Could_not_resolve_uri of Uri.t
+  | Uri_has_no_host of Uri.t
+  | Unix_error of {
+      name : string;
+      reason : Unix.error;
+      syscall : string;
+      args : string;
+    }
+  | Syscall_would_block of { name : string; syscall : string; args : string }
 
 let pp_err fmt err =
   match err with
-  | `Could_not_resolve_uri uri ->
+  | Connection_closed ->
+      Format.fprintf fmt "The connection was unexpectedly closed"
+  | Could_not_resolve_uri uri ->
       Format.fprintf fmt "Could not resolve URI: %a" Uri.pp uri
-  | `Uri_has_no_host uri -> Format.fprintf fmt "URI has no host: %a" Uri.pp uri
-  | #Rio.io_error as err -> Rio.pp_err fmt err
+  | Uri_has_no_host uri -> Format.fprintf fmt "URI has no host: %a" Uri.pp uri
+  | Syscall_would_block { name; syscall; args } ->
+      Format.fprintf fmt "Operation %S would block calling %S with args %S" name
+        syscall args
+  | Unix_error { name; reason; syscall; args } ->
+      Format.fprintf fmt
+        "Operation %S failed when calling syscall %S with arguments %S: %s" name
+        syscall args
+        (Unix.error_message reason)
 
 let ( let* ) = Result.bind
 let log = Format.printf
@@ -30,14 +45,15 @@ module Token = struct
   let make (x : 'whatever) : t = Obj.magic x
 end
 
-let rec syscall fn =
+let rec syscall ~name fn =
   match fn () with
   | ok -> ok
-  | exception Unix.(Unix_error (EINTR, _, _)) -> syscall fn
-  | exception Unix.(Unix_error ((EAGAIN | EWOULDBLOCK), _, _)) ->
+  | exception Unix.(Unix_error (EINTR, _, _)) -> syscall ~name fn
+  | exception Unix.(Unix_error ((EAGAIN | EWOULDBLOCK), syscall, args)) ->
       (* log "syscall is try again\n"; *)
-      Error `Would_block
-  | exception Unix.(Unix_error (reason, _, _)) -> Error (`Unix_error reason)
+      Error (Syscall_would_block { name; syscall; args })
+  | exception Unix.(Unix_error (reason, syscall, args)) ->
+      Error (Unix_error { name; reason; syscall; args })
 
 module Fd = struct
   type t = Unix.file_descr

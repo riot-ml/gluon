@@ -6,15 +6,7 @@ let log = Format.printf
 let handle_error r =
   match r with
   | Ok x -> x
-  | Error `Would_block -> Printf.sprintf "Would block\r\n%!" |> failwith
-  | Error `No_info -> Printf.sprintf "No info\r\n%!" |> failwith
-  | Error `Connection_closed ->
-      Printf.sprintf "Connection closed\r\n%!" |> failwith
-  | Error (`Exn exn) ->
-      Printf.sprintf "Exn: %S\r\n%!" (Printexc.to_string exn) |> failwith
-  | Error (`Unix_error err) ->
-      Printf.sprintf "Unix error: %S\r\n%!" (Unix.error_message err) |> failwith
-  | Error _ -> Printf.sprintf "other error" |> failwith
+  | Error err -> Format.asprintf "%a" pp_err err |> failwith
 
 let run () =
   let port = 9001 in
@@ -60,7 +52,7 @@ let run () =
         | Ok _ ->
             Poll.reregister poll token Interest.readable
               (Net.Tcp_stream.to_source conn)
-        | Error `Would_block -> Ok ()
+        | Error (Syscall_would_block _) -> Ok ()
         | Error err -> Error err
       in
       if Result.is_ok write_result then `continue else `finished)
@@ -72,7 +64,7 @@ let run () =
           with_bytes ~capacity:4096 (fun buf ->
               match Net.Tcp_stream.read conn buf with
               | Ok n -> Ok n
-              | Error `Would_block -> Ok 0
+              | Error (Syscall_would_block _) -> Ok 0
               | Error err -> Error err)
         in
         let data = data ^ read in
