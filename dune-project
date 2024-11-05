@@ -18,7 +18,6 @@
   (name gluon)
   (synopsis "A minimal, portable, and fast API on top of the operating-system's evented I/O API")
   (depends
-    (bytestring (>= "0.0.1"))
     (config (>= "0.0.1"))
     (libc (>= "0.0.1"))
     (ocaml (>= "5.1"))
@@ -26,3 +25,18 @@
     (uri (>= "4.4.0"))
     dune)
   (tags (async io tcp udp multicore)))
+
+(package
+  (name gluon_examples)
+  (depends gluon bytestring))
+
+(pin
+ (package
+  (name rio))
+  (url "git+https://github.com/riot-ml/rio#leostera/remove-gluon-errors"))
+
+(pin
+ (package
+  (name bytestring))
+  (url "git+https://github.com/riot-ml/bytestring"))
+

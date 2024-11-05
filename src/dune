@@ -1,0 +1,3 @@
+(library
+ (public_name gluon)
+ (libraries rio uri gluon_common gluon_sys libc))

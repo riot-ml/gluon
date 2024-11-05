@@ -1,0 +1,11 @@
+(library
+ (package gluon)
+ (name gluon_sys)
+ (libraries gluon_common gluon_events unix libc rio)
+ (preprocess
+  (pps config.ppx))
+ (foreign_stubs
+  (language c)
+  (names gluon_unix_io gluon_unix_kqueue gluon_unix_epoll)
+  (flags
+   (:standard -O2))))

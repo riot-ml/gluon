@@ -1,5 +1,6 @@
 (executables
- (names tcp_server echo_server http_server)
+ (package gluon_examples)
+ (public_names tcp_server echo_server http_server)
  (preprocess
   (pps bytestring.ppx))
  (libraries gluon bytestring))
